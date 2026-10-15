@@ -1,0 +1,48 @@
+const { Pool } = require("pg");
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL تنظیم نشده است");
+}
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL.includes("localhost")
+    ? false
+    : { rejectUnauthorized: false }
+});
+
+async function initDatabase() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id BIGSERIAL PRIMARY KEY,
+      username VARCHAR(50) UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id)
+        ON DELETE CASCADE,
+      title TEXT DEFAULT 'گفتگوی جدید',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id BIGSERIAL PRIMARY KEY,
+      conversation_id BIGINT NOT NULL
+        REFERENCES conversations(id) ON DELETE CASCADE,
+      role VARCHAR(20) NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  console.log("✅ Database initialized");
+}
+
+module.exports = { pool, initDatabase };
