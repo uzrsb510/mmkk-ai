@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMKK AI - هوش مصنوعی</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #0b0b15;
+  color: white;
+  font-family: Tahoma, Arial, sans-serif;
+}
+
+header {
+  padding: 18px;
+  background: #171727;
+  text-align: center;
+  font-size: 23px;
+  font-weight: bold;
+  color: #b68cff;
+  border-bottom: 1px solid #333;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  background: #12121e;
+}
+
+nav button {
+  background: #24243b;
+  color: white;
+  border: 1px solid #454560;
+  padding: 11px 15px;
+  border-radius: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+nav button.active {
+  background: #7444dc;
+}
+
+#chat {
+  height: calc(100dvh - 230px);
+  min-height: 200px;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.welcome {
+  text-align: center;
+  line-height: 2.2;
+  color: #ddd;
+  padding: 25px 5px;
+}
+
+.message {
+  padding: 13px;
+  margin: 12px 0;
+  border-radius: 15px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.user {
+  background: #5032a0;
+  margin-right: 15%;
+}
+
+.ai {
+  background: #222238;
+  margin-left: 10%;
+}
+
+.input-area {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  padding: 14px;
+  background: #171727;
+  display: flex;
+  gap: 8px;
+}
+
+textarea {
+  flex: 1;
+  background: #29293e;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 13px;
+  padding: 12px;
+  resize: none;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+#send {
+  background: #8255f5;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0 20px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#send:disabled {
+  opacity: 0.5;
+}
+
+.notice {
+  text-align: center;
+  color: #bbb;
+  padding: 30px;
+  line-height: 2;
+}
+</style>
+</head>
+
+<body>
+
+<header>✨ MMKK AI</header>
+
+<nav>
+  <button class="active" onclick="showChat(this)">
+    🤖 چت هوشمند
+  </button>
+
+  <button onclick="showComingSoon('ساخت عکس')">
+    🎨 ساخت عکس
+  </button>
+
+  <button onclick="showComingSoon('ویرایش عکس')">
+    🖼️ ویرایش عکس
+  </button>
+
+  <button onclick="showComingSoon('ساخت ویدیو')">
+    🎬 ساخت ویدیو
+  </button>
+
+  <button onclick="showComingSoon('ساخت صدا')">
+    🎙️ ساخت صدا
+  </button>
+</nav>
+
+<div id="chat">
+  <div class="welcome">
+    <h2>🌹 به MMKK AI خوش آمدید!</h2>
+
+    🤖 هوش مصنوعی کانفیگ‌ساز رایگان شما
+    <br>
+    🌍 به هر زبانی که دوست دارید صحبت کنید.
+    <br>
+    🌐 اگر در ساخت کانفیگ یا اتصال اینترنت مشکلی دارید،
+    همین‌جا مطرح کنید تا کمکتان کنم.
+    <br>
+    🎨 ساخت عکس، ویدیو و صدا به‌زودی فعال می‌شود.
+  </div>
+</div>
+
+<div class="input-area">
+  <textarea
+    id="message"
+    rows="2"
+    placeholder="پیام خود را بنویسید..."
+  ></textarea>
+
+  <button id="send" onclick="sendMessage()">
+    ➤
+  </button>
+</div>
+
+<script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("message");
+const sendButton = document.getElementById("send");
+
+let busy = false;
+
+function addMessage(text, type) {
+  const div = document.createElement("div");
+
+  div.className = "message " + type;
+  div.textContent = text;
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+
+  return div;
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+
+  if (!text || busy) return;
+
+  busy = true;
+  sendButton.disabled = true;
+
+  addMessage(text, "user");
+  input.value = "";
+
+  const loading = addMessage(
+    "⏳ هوش مصنوعی در حال پاسخ دادن است...",
+    "ai"
+  );
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "خطا در ارتباط با سرور"
+      );
+    }
+
+    loading.textContent =
+      data.reply || "پاسخی دریافت نشد.";
+
+  } catch (error) {
+    loading.textContent =
+      "❌ " + error.message;
+  } finally {
+    busy = false;
+    sendButton.disabled = false;
+    input.focus();
+  }
+}
+
+function showChat(button) {
+  document.querySelectorAll("nav button").forEach(b => {
+    b.classList.remove("active");
+  });
+
+  button.classList.add("active");
+}
+
+function showComingSoon(name) {
+  alert("🚧 بخش " + name + " هنوز فعال نشده است.");
+}
+
+input.addEventListener("keydown", function(event) {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+});
+</script>
+
+</body>
+</html>
